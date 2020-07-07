@@ -1,4 +1,4 @@
-module github.com/aws/aws-sdk-go-v2
+module github.com/JordonPhillips/aws-sdk-go-v2
 
 require (
 	github.com/awslabs/smithy-go v0.0.0-20200702221640-b1c2d4088d13
