@@ -2,6 +2,7 @@ package software.amazon.smithy.aws.go.codegen;
 
 import java.util.Set;
 import software.amazon.smithy.aws.traits.protocols.AwsQueryTrait;
+import software.amazon.smithy.go.codegen.GoDependency;
 import software.amazon.smithy.go.codegen.GoWriter;
 import software.amazon.smithy.go.codegen.SmithyGoDependency;
 import software.amazon.smithy.go.codegen.integration.HttpRpcProtocolGenerator;
@@ -79,12 +80,32 @@ final class AwsQuery extends HttpRpcProtocolGenerator {
 
     @Override
     protected void generateDocumentBodyShapeDeserializers(GenerationContext context, Set<Shape> shapes) {
-        // TODO: support query deser
+        XmlShapeDeserVisitor visitor = new XmlShapeDeserVisitor(context);
+        shapes.forEach(shape -> shape.accept(visitor));
     }
 
     @Override
     protected void deserializeOutputDocument(GenerationContext context, OperationShape operation) {
-        // TODO: support query deser
+        GoWriter writer = context.getWriter();
+
+        // Initialize the XML decoder.
+        // Use a ring buffer and tee reader to help in pinpointing any deserialization errors.
+        writer.addUseImports(SmithyGoDependency.SMITHY_IO);
+        writer.write("buff := make([]byte, 1024)");
+        writer.write("ringBuffer := smithyio.NewRingBuffer(buff)");
+        writer.write("");
+
+        writer.addUseImports(SmithyGoDependency.IO);
+        writer.addUseImports(GoDependency.standardLibraryDependency("encoding/xml", "1.14"));
+        writer.write("body := io.TeeReader($L, ringBuffer)", "response.Body");
+        writer.write("decoder := xml.NewDecoder(body)");
+        writer.write("");
+
+        StructureShape output = ProtocolUtils.expectOutput(context.getModel(), operation);
+        String functionName = ProtocolGenerator.getDocumentDeserializerFunctionName(output, getProtocolName());
+        writer.write("err = $L(&output, decoder)", functionName);
+
+        AwsProtocolUtils.handleDecodeError(writer, "out, metadata, ");
     }
 
     @Override

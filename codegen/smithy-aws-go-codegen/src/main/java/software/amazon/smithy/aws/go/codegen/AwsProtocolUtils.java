@@ -153,7 +153,7 @@ final class AwsProtocolUtils {
             writer.write("var snapshot bytes.Buffer");
             writer.write("io.Copy(&snapshot, ringBuffer)");
             writer.openBlock("return $L&smithy.DeserializationError {", "}", returnExtras, () -> {
-                writer.write("Err: fmt.Errorf(\"failed to decode response body with invalid JSON, %w\", err),");
+                writer.write("Err: fmt.Errorf(\"failed to decode response body, %w\", err),");
                 writer.write("Snapshot: snapshot.Bytes(),");
             });
         }).write("");
